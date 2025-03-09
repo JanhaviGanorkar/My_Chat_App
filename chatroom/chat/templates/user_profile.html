@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }}'s Profile</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; text-align: center; }
+        .profile-pic { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ user.username }}'s Profile</h2>
+        
+        {% if user.profile.image %}
+            <img src="{{ user.profile.image.url }}" alt="Profile Picture" class="profile-pic">
+        {% else %}
+            <img src="https://via.placeholder.com/150" alt="Default Profile Picture" class="profile-pic">
+        {% endif %}
+
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+    
+    </div>
+</body>
+</html>

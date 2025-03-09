@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user_profile.username }}'s Profile</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; text-align: center; }
+        img { width: 150px; height: 150px; border-radius: 50%; margin-bottom: 10px; }
+        button { padding: 10px; margin: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="{{ profile.profile_picture.url }}" alt="Profile Picture">
+        <h2>{{ user_profile.username }}</h2>
+        <p>{{ profile.bio|default:"No bio available" }}</p>
+
+        {% if user_profile != request.user %}
+            {% if friend_request_sent %}
+                <button disabled>Friend Request Sent</button>
+            {% elif friend_request_received %}
+                <button disabled>Friend Request Received</button>
+            {% else %}
+                <form method="post" action="{% url 'send_friend_request' user_profile.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Send Friend Request</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>

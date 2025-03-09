@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends & Friend Requests</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .section { margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 8px; border-bottom: 1px solid #ddd; }
+        button { margin-left: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Friends</h2>
+        <ul>
+            {% for friend in friends %}
+          <li>
+              <a href="{% url 'user-profile' friend.friend.id %}">{{ friend.friend.username }}</a>
+              <a href=""></a>
+          </li>  
+            {% empty %}
+                <li>No friends yet.</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Friend Requests</h2>
+        <ul>
+            {% for request in friend_requests %}
+            <li>
+                {{ request.sender.username }}
+                <form method="post" action="{% url 'accept-friend-request' request.id %}">
+
+                    {% csrf_token %}
+                    <button type="submit">Accept</button>
+                </form>
+            </li>
+        {% empty %}
+            <li>No friend requests.</li>
+        {% endfor %}
+        
+        </ul>
+    </div>
+</body>
+</html>
