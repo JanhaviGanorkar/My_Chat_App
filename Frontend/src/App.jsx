@@ -4,6 +4,7 @@ import Login from "../src/auth/Login";
 import Home from "./pages/Home";
 import { useAuthStore } from "./store/authStore"; // Zustand Store
 import Logout from "../src/auth/Logout"
+import ChatScreen  from "./pages/Msg";
 
 // Protected Route Component
 function PrivateRoute({ element }) {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/chatscreen" element={<ChatScreen />} />
       </Routes>
     </Router>
   );

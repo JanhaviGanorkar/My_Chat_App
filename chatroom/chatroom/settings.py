@@ -35,6 +35,7 @@ INSTALLED_APPS = [
       "rest_framework_simplejwt",
       'corsheaders',
      'rest_framework',
+     'channels',
      'authentication',
     "django.contrib.admin",
     "django.contrib.auth",
@@ -188,3 +189,5 @@ CELERY_TASK_SERIALIZER = "json"
 
 
 AUTH_USER_MODEL = "authentication.CustomUser"
+
+

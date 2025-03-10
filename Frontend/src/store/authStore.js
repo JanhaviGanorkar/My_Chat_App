@@ -20,9 +20,9 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  register: async (email, password) => {
+  register: async (name, email, password) => {
     try {
-      await axios.post(`${API_BASE_URL}/register/`, { email, password });
+      await axios.post(`${API_BASE_URL}/register/`, { name, email, password });
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.error || "Registration failed" };
