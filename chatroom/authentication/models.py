@@ -7,9 +7,11 @@ class CustomUserManager(BaseUserManager):
             raise ValueError("Email field is required")
         
         email = self.normalize_email(email)
-        name = name or "User" 
+        if not name:
+            raise ValueError("User name Required")
+        # name = name or "User"  # ✅ Default name agar user na de
 
-        user = self.model(email=email, name=name, **extra_fields)  
+        user = self.model(email=email, name=name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -18,9 +20,9 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
-        return self.create_user(email, name or "Admin", password, **extra_fields)  # ✅ Default name for superuser
+        return self.create_user(email, name or "Admin", password, **extra_fields)
 
-class CustomUser(AbstractBaseUser, PermissionsMixin):  
+class CustomUser(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255, default="User")  
     email = models.EmailField(unique=True)  
 
@@ -28,7 +30,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["name"]  # ✅ Django ke superuser ke liye required fields
+    REQUIRED_FIELDS = ["name"]
 
     objects = CustomUserManager()
 

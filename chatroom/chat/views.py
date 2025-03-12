@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
-from .models import FriendRequest, Friendship
+from .models import FriendRequest, Friendship, Profile
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.decorators import login_required
@@ -12,14 +12,17 @@ from django.shortcuts import render
 
 User = get_user_model()
 
-@login_required
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def user_profile(request, user_id):
-    user = get_object_or_404(User, id=user_id)
+    profile = get_object_or_404(Profile, user__id=user_id)  
+
     return JsonResponse({
-        "id": user.id,
-        "name": user.name,  
-        "email": user.email,
-        "profile": user.profile.id if hasattr(user, 'profile') else None
+        "id": profile.user.id,
+        "user": profile.user.name,  # ✅ Use `email` instead of `username`
+        "email": profile.user.email,
+        "profile_image": profile.profile_image.url if profile.profile_image else None,  
+        "bio": profile.bio,
     })
 
 @login_required
@@ -100,3 +103,9 @@ def home(request):
 
 def room(request, room_name):
     return render(request, "chat/room.html", {"room_name": room_name})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_current_user(request):
+    return JsonResponse({"user_id": request.user.id})
