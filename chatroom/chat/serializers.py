@@ -10,3 +10,4 @@ class FriendshipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friendship
         fields = "__all__"
+

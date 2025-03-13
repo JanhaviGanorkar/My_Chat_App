@@ -19,5 +19,11 @@ export default function ChatStore() {
     fetchFriends();
   }, []);
 
-  return <div>Check console for friends list</div>;
+  return (
+    <>
+  <div>Check console for friends list</div>
+  
+    </>
+
+  )
 }

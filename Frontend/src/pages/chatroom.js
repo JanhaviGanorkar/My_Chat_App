@@ -1,5 +1,5 @@
 import React from "react";
-import Chat from "./Chat";
+import ChatRoom from "../pages/Msg";
 
 const ChatRoom = () => {
     const roomId = "general"; // Chat room ID (Backend ke according set karein)
@@ -8,7 +8,7 @@ const ChatRoom = () => {
     return (
         <div>
             <h2>Chat Room</h2>
-            <Chat roomId={roomId} token={token} />
+            <ChatRoom roomId={roomId} token={token} />
         </div>
     );
 };

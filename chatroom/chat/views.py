@@ -12,6 +12,8 @@ from django.shortcuts import render
 
 User = get_user_model()
 
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_profile(request, user_id):
@@ -23,6 +25,8 @@ def user_profile(request, user_id):
         "email": profile.user.email,
         "profile_image": profile.profile_image.url if profile.profile_image else None,  
         "bio": profile.bio,
+        #   "is_self": is_self
+         
     })
 
 @login_required
@@ -78,13 +82,17 @@ def send_friend_request(request, receiver_id):
 
     return JsonResponse({"message": "Friend request sent successfully"})
 
-@login_required
+# @login_required
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def accept_friend_request(request, request_id):
     friend_request = get_object_or_404(FriendRequest, id=request_id, receiver=request.user)
     friend_request.accept()
     return JsonResponse({"message": "Friend request accepted"})
 
-@login_required
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def list_friend_requests(request):
     received_requests = FriendRequest.objects.filter(receiver=request.user).values("id", "sender__name", "sender__email")  # ✅ Fixed
     return JsonResponse({"friend_requests": list(received_requests)})

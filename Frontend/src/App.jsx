@@ -5,6 +5,9 @@ import Home from "./pages/Home";
 import { useAuthStore } from "./store/authStore"; // Zustand Store
 import Logout from "../src/auth/Logout"
 import ChatScreen  from "./pages/Msg";
+import UserProfile from "./pages/UserProfile";
+import FriendList from "./Friends/Friends";
+import FriendRequest from "./Friends/FriendRequest";
 
 // Protected Route Component
 function PrivateRoute({ element }) {
@@ -22,6 +25,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/chatscreen" element={<ChatScreen />} />
+        <Route path="/userprofile" element={<UserProfile />} />
+        <Route path="/friend" element={<FriendList />} />
+        <Route path="/friendreq" element={<FriendRequest />} />
       </Routes>
     </Router>
   );
