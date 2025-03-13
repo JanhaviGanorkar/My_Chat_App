@@ -87,21 +87,36 @@ def send_friend_request(request, receiver_id):
 @permission_classes([IsAuthenticated])
 def accept_friend_request(request, request_id):
     friend_request = get_object_or_404(FriendRequest, id=request_id, receiver=request.user)
-    friend_request.accept()
+    
+    # ✅ Check if already accepted
+    if friend_request.accepted:
+        return JsonResponse({"error": "Friend request already accepted"}, status=400)
+    
+    # ✅ Accept the request
+    friend_request.accepted = True
+    friend_request.save()
+
+    # ✅ Create a two-way friendship
+    Friendship.objects.create(user=friend_request.sender, friend=friend_request.receiver)
+    Friendship.objects.create(user=friend_request.receiver, friend=friend_request.sender)
+
     return JsonResponse({"message": "Friend request accepted"})
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def list_friend_requests(request):
-    received_requests = FriendRequest.objects.filter(receiver=request.user).values("id", "sender__name", "sender__email")  # ✅ Fixed
-    return JsonResponse({"friend_requests": list(received_requests)})
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def list_friends(request):
-    friends = Friendship.objects.filter(user=request.user).values("friend__id", "friend__name", "friend__email")  # ✅ Fixed
+    friends = Friendship.objects.filter(user=request.user).values("friend__id", "friend__name", "friend__email")
     return Response({"friends": list(friends)})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_friend_requests(request):
+    friend_requests = FriendRequest.objects.filter(receiver=request.user, accepted=False).values(
+        "id", "sender__id", "sender__name", "sender__email"
+    )
+    return Response({"friend_requests": list(friend_requests)})
+
 
 @login_required
 def home(request):

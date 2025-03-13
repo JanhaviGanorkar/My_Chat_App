@@ -28,14 +28,14 @@ export default function FriendRequest() {
 
     fetchFriendRequests();
   }, []);
+  const queryClient = useQueryClient(); // ✅ Ensure queryClient is initialized
 
-  
   const acceptMutation = useMutation({
     mutationFn: async (friendId) => {
       return axios.post(
-        `http://127.0.0.1:8000/friends/accept/${friendId}/`, 
-        {},  
-        { headers }
+        `http://127.0.0.1:8000/friends/accept/${friendId}/`,
+        {},  // Empty request body
+        { headers }  // ✅ Correct placement
       );
     },
     onSuccess: (_, friendId) => {
@@ -45,6 +45,7 @@ export default function FriendRequest() {
       );
     },
   });
+  
   
 
 
