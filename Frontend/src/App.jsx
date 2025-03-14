@@ -9,7 +9,6 @@ import UserProfile from "./pages/UserProfile";
 import FriendList from "./Friends/Friends";
 import FriendRequest from "./Friends/FriendRequest";
 
-// Protected Route Component
 function PrivateRoute({ element }) {
   const accessToken = useAuthStore((state) => state.accessToken); // Check if user is logged in
 

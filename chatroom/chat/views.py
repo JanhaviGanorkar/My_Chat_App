@@ -29,17 +29,18 @@ def user_profile(request, user_id):
          
     })
 
-@login_required
-def profile_view(request, name):  # ✅ Fixed (changed username → name)
-    user_profile = get_object_or_404(User, name=name)  # ✅ Fixed (changed username → name)
-    profile = user_profile.profile if hasattr(user_profile, 'profile') else None
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def friend_profile(request, friendId):
+    user_profile = get_object_or_404(User, id=friendId)  # ✅ Fixed (Use id=friendId)
+    profile = getattr(user_profile, 'profile', None)  # ✅ More Pythonic way
     friend_request_sent = FriendRequest.objects.filter(sender=request.user, receiver=user_profile).exists()
     friend_request_received = FriendRequest.objects.filter(sender=user_profile, receiver=request.user).exists()
 
     return JsonResponse({
         "user_profile": {
             "id": user_profile.id,
-            "name": user_profile.name,  # ✅ Fixed
+            "name": user_profile.name,
             "email": user_profile.email,
         },
         "profile": profile.id if profile else None,
@@ -126,6 +127,14 @@ def home(request):
 
 def room(request, room_name):
     return render(request, "chat/room.html", {"room_name": room_name})
+
+
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def is_friend(request, id=frinedId):
+#       if 
+#       friends = Friendship.objects.filter(user=request.user).values("friend__id", "friend__name", "friend__email")
 
 
 @api_view(['GET'])

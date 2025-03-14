@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import profile_view, user_profile, get_current_user
+from .views import  friend_profile, user_profile, get_current_user
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
@@ -9,7 +9,7 @@ urlpatterns = [
     #  path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path('user-profile/<int:user_id>/', views.user_profile, name='user-profile'),
       path("me/", get_current_user, name="current-user"),
-    path("profile/<str:username>/", views.profile_view, name="profile"),
+    path("friend_profile/<int:friendId>/", views.friend_profile, name="friend_profile"),
     path("chat/<str:room_name>/", views.room, name="room"),
     path("friends/", views.friends_page, name="friends_page"),
     path("friends/send/<int:receiver_id>/", views.send_friend_request, name="send-friend-request"),
