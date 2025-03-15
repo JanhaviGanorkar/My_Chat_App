@@ -6,7 +6,7 @@ from django.dispatch import receiver
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    profile_image = models.ImageField(upload_to='profile_pics/', default='default.jpg')  # ✅ Renamed from `image`
+    profile_image = models.ImageField(upload_to="profile_pics/", default='default.jpg')  # ✅ Renamed from `image`
     bio = models.TextField(blank=True, null=True)
 
     def __str__(self):

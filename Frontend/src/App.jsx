@@ -8,6 +8,7 @@ import ChatScreen  from "./pages/Msg";
 import UserProfile from "./pages/UserProfile";
 import FriendList from "./Friends/Friends";
 import FriendRequest from "./Friends/FriendRequest";
+import EditProfile from "../src/Form/EditProfile"
 
 function PrivateRoute({ element }) {
   const accessToken = useAuthStore((state) => state.accessToken); // Check if user is logged in
@@ -26,6 +27,7 @@ function App() {
         <Route path="/chatscreen" element={<ChatScreen />} />
         <Route path="/userprofile" element={<UserProfile />} />
         <Route path="/friend" element={<FriendList />} />
+        <Route path="/editprofile" element={<EditProfile/>} />
         <Route path="/friendreq" element={<FriendRequest />} />
       </Routes>
     </Router>

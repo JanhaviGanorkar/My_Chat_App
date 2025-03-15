@@ -4,6 +4,7 @@ from .views import  friend_profile, user_profile, get_current_user
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
+
 urlpatterns = [
     path("", views.home, name="home"),
     #  path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),

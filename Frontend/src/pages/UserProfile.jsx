@@ -5,21 +5,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import FriendList from "../Friends/Friends";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom"; // ✅ Ensure navigation works
 
 const UserProfile = () => {
+  const navigate = useNavigate(); // ✅ Use navigation hook
   const token = localStorage.getItem("access");
   const [userId, setUserId] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user ID when the component mounts
   useEffect(() => {
     const fetchUserId = async () => {
       try {
-        const { user_id } = await axios.get("http://127.0.0.1:8000/me/", {
+        const response = await axios.get("http://127.0.0.1:8000/me/", {
           headers: { Authorization: `Bearer ${token}` },
-        }).then((response) => response.data);
-
-        setUserId(user_id);
+        });
+        setUserId(response.data.user_id);
       } catch (error) {
         console.error("❌ Failed to fetch user ID:", error);
       }
@@ -28,6 +30,7 @@ const UserProfile = () => {
     fetchUserId();
   }, []);
 
+  // Fetch user profile when userId is available
   useEffect(() => {
     if (!userId) return;
 
@@ -35,7 +38,10 @@ const UserProfile = () => {
       try {
         const response = await axios.get(`http://127.0.0.1:8000/user-profile/${userId}/`, {
           headers: { Authorization: `Bearer ${token}` },
+          params: { t: new Date().getTime() }, // ✅ Forces fresh data
         });
+
+        console.log("✅ Profile Data Fetched:", response.data);
         setUser(response.data);
       } catch (error) {
         console.error("❌ Failed to fetch user profile:", error.response?.data || error.message);
@@ -47,9 +53,19 @@ const UserProfile = () => {
     fetchUserProfile();
   }, [userId]);
 
-  if (loading) return <div className="text-center text-gray-500">Loading...</div>;
-  if (!user || Object.keys(user).length === 0) 
+  // 🔹 Loading state
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // 🔹 Handle empty user data
+  if (!user) {
     return <div className="text-center text-red-500">User not found!</div>;
+  }
 
   return (
     <motion.div
@@ -63,9 +79,17 @@ const UserProfile = () => {
           {/* Profile Image */}
           <motion.div whileHover={{ scale: 1.1 }} className="relative">
             <Avatar className="w-24 h-24 border-4 border-gray-300 shadow-md">
-              <AvatarImage src={user?.profile?.profile_image} alt="Profile" />
-              <AvatarFallback>{user?.user?.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarImage
+                src={`http://127.0.0.1:8000${user.profile_image}?t=${new Date().getTime()}`}
+                alt="Profile"
+              />
+
+
+              <AvatarFallback>
+                {user.user?.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
+
           </motion.div>
 
           {/* Name & Email */}
@@ -74,7 +98,10 @@ const UserProfile = () => {
 
           {/* Edit Profile Button */}
           <motion.div whileHover={{ scale: 1.05 }}>
-            <Button className="mt-4 bg-blue-500 text-white hover:bg-blue-600 transition-all">
+            <Button
+              onClick={() => navigate("/editprofile", { state: { userId } })}
+              className="mt-4 bg-blue-500 text-white hover:bg-blue-600 transition-all"
+            >
               Edit Profile
             </Button>
           </motion.div>
@@ -88,6 +115,7 @@ const UserProfile = () => {
           >
             <h3 className="text-lg font-semibold text-gray-700">Bio</h3>
             <p className="text-gray-600">{user.bio || "No bio available."}</p>
+
           </motion.div>
 
           {/* Friends List */}

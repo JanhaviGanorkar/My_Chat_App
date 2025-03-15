@@ -9,39 +9,29 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import render
+from .serializers import ProfileSerializer
+
+
 
 User = get_user_model()
 
 
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def user_profile(request, user_id):
-    profile = get_object_or_404(Profile, user__id=user_id)  
-
-    return JsonResponse({
-        "id": profile.user.id,
-        "user": profile.user.name,  # ✅ Use `email` instead of `username`
-        "email": profile.user.email,
-        "profile_image": profile.profile_image.url if profile.profile_image else None,  
-        "bio": profile.bio,
-        #   "is_self": is_self
-         
-    })
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def friend_profile(request, friendId):
-    user_profile = get_object_or_404(User, id=friendId)  # ✅ Fixed (Use id=friendId)
-    profile = getattr(user_profile, 'profile', None)  # ✅ More Pythonic way
-    friend_request_sent = FriendRequest.objects.filter(sender=request.user, receiver=user_profile).exists()
-    friend_request_received = FriendRequest.objects.filter(sender=user_profile, receiver=request.user).exists()
+    user_profile = get_object_or_404(User, id=friendId)
+    profile = getattr(user_profile, 'profile', None)
+    friend_request_sent = FriendRequest.objects.filter(
+        sender=request.user, receiver=user_profile).exists()
+    friend_request_received = FriendRequest.objects.filter(
+        sender=user_profile, receiver=request.user).exists()
 
     return JsonResponse({
         "user_profile": {
             "id": user_profile.id,
             "name": user_profile.name,
             "email": user_profile.email,
+            "profilePic": profile.profile_image.url if profile and profile.profile_image else None,
         },
         "profile": profile.id if profile else None,
         "friend_request_sent": friend_request_sent,
@@ -130,14 +120,35 @@ def room(request, room_name):
 
 
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def is_friend(request, id=frinedId):
-#       if 
-#       friends = Friendship.objects.filter(user=request.user).values("friend__id", "friend__name", "friend__email")
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_current_user(request):
     return JsonResponse({"user_id": request.user.id})
+
+
+
+
+@api_view(['GET', 'PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def user_profile(request, user_id):
+    profile = get_object_or_404(Profile, user__id=user_id)
+
+    # Check if the requested profile belongs to the logged-in user
+    if request.method in ['PUT', 'PATCH']:
+        if request.user.id != user_id:
+            return Response({"error": "You can only edit your own profile."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProfileSerializer(profile, data=request.data, partial=(request.method == 'PATCH'))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        "id": profile.user.id,
+        "user": profile.user.name,  
+        "email": profile.user.email,
+        "profile_image": profile.profile_image.url if profile.profile_image else None,
+        "bio": profile.bio,
+        "is_self": request.user.id == user_id  # Checking if logged-in user owns the profile
+    })
