@@ -5,12 +5,13 @@ from .models import FriendRequest, Friendship, Profile
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.decorators import login_required
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import render
 from .serializers import ProfileSerializer
-
+from rest_framework import status  
 
 
 User = get_user_model()
@@ -125,20 +126,22 @@ def room(request, room_name):
 def get_current_user(request):
     return JsonResponse({"user_id": request.user.id})
 
-
-
-
 @api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])  # For handling image uploads
 def user_profile(request, user_id):
     profile = get_object_or_404(Profile, user__id=user_id)
 
-    # Check if the requested profile belongs to the logged-in user
     if request.method in ['PUT', 'PATCH']:
         if request.user.id != user_id:
             return Response({"error": "You can only edit your own profile."}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = ProfileSerializer(profile, data=request.data, partial=(request.method == 'PATCH'))
+        # Handle Image Upload Correctly
+        data = request.data.copy()
+        if 'profile_image' in request.FILES:
+            data['profile_image'] = request.FILES['profile_image']
+
+        serializer = ProfileSerializer(profile, data=data, partial=(request.method == 'PATCH'))
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -147,8 +150,9 @@ def user_profile(request, user_id):
     return Response({
         "id": profile.user.id,
         "user": profile.user.name,  
+        # "user": profile.user.get_full_name() or profile.user.username,  # Safe name handling
         "email": profile.user.email,
-        "profile_image": profile.profile_image.url if profile.profile_image else None,
+        "profile_image": getattr(profile.profile_image, 'url', None),  # Safe image URL handling
         "bio": profile.bio,
         "is_self": request.user.id == user_id  # Checking if logged-in user owns the profile
     })

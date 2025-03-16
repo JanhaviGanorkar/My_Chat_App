@@ -10,7 +10,7 @@ class CustomUserManager(BaseUserManager):
         if not name:
             raise ValueError("User name Required")
         # name = name or "User"  # ✅ Default name agar user na de
-
+        
         user = self.model(email=email, name=name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
