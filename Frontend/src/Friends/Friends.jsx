@@ -21,7 +21,7 @@ const FriendList = () => {
             <li
               key={friend.friend__id}
               className="flex items-center space-x-4 cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition"
-              onClick={() => navigate("/", { state: { friendId: friend.friend__id } })}
+              onClick={() => navigate("/", { state: { friendId: friend.friend__id } })} // Fix the navigation path
             >
               <img
                 src={friend.profilePic || "/default-avatar.png"}

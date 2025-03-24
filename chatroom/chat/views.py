@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from django.shortcuts import render
 from .serializers import ProfileSerializer
 from rest_framework import status  
-
+from django.db.models import Q  # Add this import
 
 User = get_user_model()
 
@@ -156,3 +156,14 @@ def user_profile(request, user_id):
         "bio": profile.bio,
         "is_self": request.user.id == user_id  # Checking if logged-in user owns the profile
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def search_users(request):
+    query = request.GET.get('query', '')
+    if query:
+        users = User.objects.filter(
+            Q(name__icontains=query) | Q(email__icontains=query)
+        ).exclude(id=request.user.id).values('id', 'name', 'email')
+        return JsonResponse({"users": list(users)})
+    return JsonResponse({"users": []})

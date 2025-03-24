@@ -13,7 +13,7 @@ export const useFriendsStore = create((set) => ({
       };
 
       const response = await axios.get("http://127.0.0.1:8000/friends/list/", { headers });
-      console.log(response.data.friends[1].friend__name)
+      // console.log(response.data.friends[1].friend__name)
 
       if (response.data && Array.isArray(response.data.friends)) {
         set({ friends: response.data.friends }); // ✅ Extract only friends array

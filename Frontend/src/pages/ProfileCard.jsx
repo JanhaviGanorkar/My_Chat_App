@@ -25,6 +25,16 @@ const ProfileCard = ({ friendId }) => {
         if (friendId) fetchFriendData();
     }, [friendId]);
 
+    const handleAddFriend = async () => {
+        try {
+            await axios.post(`http://127.0.0.1:8000/friends/send/${friendId}/`, {}, { headers });
+            alert("Friend Request Send successfully");
+        } catch (error) {
+            console.error("Error sending friend request:", error);
+            alert("Failed to send  friend");
+        }
+    };
+
     if (!friendData) return <p className="text-center mt-4">Loading...</p>;
 
     const { user_profile } = friendData;
@@ -51,7 +61,11 @@ const ProfileCard = ({ friendId }) => {
                         >
                             Message
                         </Button>
-                        <Button variant="outline" className="border-gray-400 text-gray-700 hover:border-gray-600">
+                        <Button 
+                            variant="outline" 
+                            className="border-gray-400 text-gray-700 hover:border-gray-600"
+                            onClick={handleAddFriend}
+                        >
                             Add Friend
                         </Button>
                     </div>
