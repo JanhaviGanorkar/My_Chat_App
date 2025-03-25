@@ -5,12 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 const ProfileCard = ({ friendId }) => {
     const [friendData, setFriendData] = useState(null);
-    const token = localStorage.getItem("access");
-    const headers = { Authorization: token ? `Bearer ${token}` : "" };
+    const { accessToken } = useAuthStore();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!accessToken) {
+            navigate("/login");
+        }
+    }, [accessToken, navigate]);
+
+    const headers = { Authorization: accessToken ? `Bearer ${accessToken}` : "" };
 
     useEffect(() => {
         const fetchFriendData = async () => {
@@ -23,7 +31,7 @@ const ProfileCard = ({ friendId }) => {
         };
 
         if (friendId) fetchFriendData();
-    }, [friendId]);
+    }, [friendId, headers]);
 
     const handleAddFriend = async () => {
         try {
@@ -31,7 +39,7 @@ const ProfileCard = ({ friendId }) => {
             alert("Friend Request Send successfully");
         } catch (error) {
             console.error("Error sending friend request:", error);
-            alert("Failed to send  friend");
+            alert("Failed to send friend request");
         }
     };
 

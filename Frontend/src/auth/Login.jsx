@@ -15,7 +15,7 @@ const Login = () => {
     const res = await login(email, password);
     if (res.success) {
       alert("Login successful!");
-      navigate("/");
+      navigate("/userprofile");
     } else {
       alert(res.message);
     }

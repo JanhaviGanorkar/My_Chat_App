@@ -13,7 +13,11 @@ const UserProfile = () => {
   const [userId, setUserId] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+//   useEffect(() => {
+//     if (!accessToken) {
+//         navigate("/login");
+//     }
+// }, [accessToken, navigate]);
   // Fetch user ID when the component mounts
   useEffect(() => {
     const fetchUserId = async () => {
@@ -32,7 +36,9 @@ const UserProfile = () => {
 
   // Fetch user profile when userId is available
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      navigate("/login");
+    }
 
     const fetchUserProfile = async () => {
       try {

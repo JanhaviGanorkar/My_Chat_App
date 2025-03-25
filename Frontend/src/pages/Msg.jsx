@@ -1,19 +1,57 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MessageBubble from "../components/ui/MessageBubble";
-import useWebSocket from "../hooks/useWebSocket";
+import { useFriendsStore } from "../store/FriendStore";
 
-const ChatScreen = () => {
-  const roomId = "general"; // Chat room ID (Backend ke according set karein)
-    const token = localStorage.getItem("access"); // Auth Token
-
-  const { messages, sendMessage } = useWebSocket(roomId, token);
+const ChatScreen = ({ roomName = "general" }) => {
+  const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
+  const [socket, setSocket] = useState(null);
+  const { friends, loadFriends } = useFriendsStore();
 
-  const handleSend = () => {
-    if (message.trim()) {
-      sendMessage(message);
-      setMessage(""); // Clear input field
-      
+  const username = localStorage.getItem("username") || "Guest";
+  const token = localStorage.getItem("access");
+
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8001/ws/chat/${roomName}/`);
+    setSocket(ws);
+
+    ws.onopen = () => {
+      console.log("WebSocket connection opened");
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        console.log("Received WebSocket Message:", data);
+        setMessages((prevMessages) => [...prevMessages, data]);
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    ws.onerror = (e) => {
+      console.error("WebSocket error:", e);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [roomName]);
+
+  const sendMessage = () => {
+    if (socket && message.trim()) {
+      socket.send(
+        JSON.stringify({
+          type: "chat_message",
+          message: message,
+          username: username, // Ensure username is included
+        })
+      );
+      setMessage("");
     }
   };
 
@@ -22,10 +60,10 @@ const ChatScreen = () => {
       {/* Messages List */}
       <div className="flex-grow overflow-auto space-y-2">
         {messages.map((msg, index) => (
-          <MessageBubble 
-            key={index} 
-            message={msg.message} 
-            isSent={msg.username === "me"} 
+          <MessageBubble
+            key={index}
+            message={msg.message}
+            isSent={msg.username === username}
           />
         ))}
       </div>
@@ -38,9 +76,10 @@ const ChatScreen = () => {
           placeholder="Type a message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
         <button
-          onClick={handleSend}
+          onClick={sendMessage}
           className="ml-2 bg-blue-500 text-white p-2 rounded-lg"
         >
           Send
