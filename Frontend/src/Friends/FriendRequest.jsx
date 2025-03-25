@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export default function FriendRequest() {
   const [friendRequests, setFriendRequests] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [receiver_id, setReceiver_id] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const token = localStorage.getItem("access");
 
@@ -21,21 +22,31 @@ export default function FriendRequest() {
     try {
       const response = await axios.get(`http://127.0.0.1:8000/friends/search/?query=${searchQuery}`, { headers });
       setSearchResults(response.data.users);
+     
       console.log(response.data.users)
     } catch (error) {
       console.error("Error searching users:", error);
     }
   };
 
-  const handleSendFriendRequest = async (userId) => {
+  const handleSendFriendRequest = async (receiver_id) => {
+    // const token = localStorage.getItem("access");  // Check token
+    console.log("Using token:", token);  // Debugging
+
     try {
-      await axios.post(`http://127.0.0.1:8000/friends/send/${userId}/`, {}, { headers });
-      alert("Friend request sent successfully");
+      console.log(receiver_id)
+        const response = await axios.post(
+            `http://127.0.0.1:8000/friends/send/${receiver_id}/`, 
+            {}, 
+            { headers } );
+        console.log("Friend request sent successfully", response.data);
+        alert("Friend request sent successfully");
     } catch (error) {
-      console.error("Error sending friend request:", error);
-      alert("Failed to send friend request");
+        console.error("Error sending friend request:", error.response?.data || error.message);
+        alert("Failed to send friend request");
     }
-  };
+};
+
 
   useEffect(() => {
     const fetchFriendRequests = async () => {
@@ -91,12 +102,14 @@ export default function FriendRequest() {
         {searchResults.length > 0 && (
           <ul className="space-y-3 mt-4">
             {searchResults.map((user) => (
+              
               <li key={user.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg shadow-sm">
                 <div>
                   <p className="text-gray-800 font-medium">{user.name}</p>
                   <p className="text-gray-500 text-sm">{user.email}</p>
                 </div>
                 <Button
+                 
                   size="sm"
                   variant="outline"
                   onClick={() => handleSendFriendRequest(user.id)}

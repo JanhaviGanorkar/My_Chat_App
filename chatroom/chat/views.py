@@ -49,7 +49,8 @@ def friends_page(request):
         "friend_requests": list(friend_requests)
     })
 
-@login_required
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def send_friend_request(request, receiver_id):
     sender = request.user
     receiver = get_object_or_404(User, id=receiver_id)
@@ -62,15 +63,6 @@ def send_friend_request(request, receiver_id):
 
     FriendRequest.objects.create(sender=sender, receiver=receiver)
 
-    # Send WebSocket notification
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f"user_{receiver.email}",  # ✅ Fixed (changed username → email)
-        {
-            "type": "friend_request_notification",
-            "sender": sender.email,  # ✅ Fixed
-        },
-    )
 
     return JsonResponse({"message": "Friend request sent successfully"})
 
