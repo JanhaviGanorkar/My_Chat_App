@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import  friend_profile, user_profile, get_current_user
+from .views import  friend_profile, user_profile, get_current_user, get_messages
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
@@ -18,6 +18,7 @@ urlpatterns = [
     path("friends/requests/", views.list_friend_requests, name="list-friend-requests"),
     path("friends/list/", views.list_friends, name="list-friends"),
     path("friends/search/", views.search_users, name="search-users"),
+    path("messages/", get_messages, name="get_messages"),
 ]
 
 

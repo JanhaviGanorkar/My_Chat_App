@@ -12,6 +12,7 @@ const ChatScreen = () => {
   const [userId, setUserId] = useState(null);
   const [message, setMessage] = useState("");
   const socketRef = useRef(null);
+  const chatContainerRef = useRef(null); // Ref for scrolling
   const token = localStorage.getItem("access");
 
   useEffect(() => {
@@ -20,7 +21,6 @@ const ChatScreen = () => {
       return;
     }
 
-    // Fetch user ID
     const fetchUserId = async () => {
       try {
         const response = await axios.get("http://127.0.0.1:8000/me/", {
@@ -33,26 +33,26 @@ const ChatScreen = () => {
     };
 
     fetchUserId();
+    fetchMessages();
 
-    // ✅ WebSocket Connection
     const ws = new WebSocket(`ws://localhost:8000/ws/chat/${friendId}/?token=${token}`);
     socketRef.current = ws;
 
     ws.onopen = () => console.log("✅ WebSocket connected");
 
     ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        console.log("📩 New Message Received:", data);
-
-        // ✅ Fix: Ensure correct message format
-        if (data.sender && data.message) {
-          setMessages((prevMessages) => [...prevMessages, data]);
+        try {
+          const data = JSON.parse(e.data);
+          console.log("📩 New Message Received:", data);
+          if (data.sender && data.content) {
+            setMessages((prevMessages) => [...prevMessages, data]); // ✅ Last me append karo
+            scrollToBottom(); // ✅ Scroll to bottom
+          }
+        } catch (error) {
+          console.error("⚠️ Error parsing WebSocket message:", error);
         }
-      } catch (error) {
-        console.error("⚠️ Error parsing WebSocket message:", error);
-      }
-    };
+      };
+      
 
     ws.onclose = (event) => console.warn("❌ WebSocket closed:", event.reason);
     ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
@@ -64,21 +64,38 @@ const ChatScreen = () => {
     };
   }, [friendId, token]);
 
+  const fetchMessages = async () => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/messages/?friend_id=${friendId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMessages(response.data.reverse()); // Reverse the order of messages
+      scrollToBottom(); // Scroll to the bottom after fetching messages
+    } catch (error) {
+      console.error("❌ Failed to fetch messages:", error);
+    }
+  };
+
   const sendMessage = async () => {
     if (!socketRef.current || !message.trim() || !userId || !friendId) return;
-  
+
     const messageData = {
       sender: userId,
-      receiver: friendId,  // ✅ Include receiver ID
-      content: message,  // ✅ Fix field name (should match Django model)
+      receiver: friendId,
+      content: message,
     };
-  
-    // ✅ Send message through WebSocket
-    socketRef.current.send(JSON.stringify(messageData));
-  
-    // ✅ Save message to backend
+
+    // Add the message to the state immediately
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { sender: userId, content: message }, // Add the new message locally
+    ]);
+    scrollToBottom(); // Scroll to the bottom after sending a message
+
+    socketRef.current.send(JSON.stringify(messageData)); // Send the message via WebSocket
+
     try {
-      const res = await axios.post(
+      await axios.post(
         "http://127.0.0.1:8000/api/messages/",
         messageData,
         {
@@ -88,33 +105,34 @@ const ChatScreen = () => {
           },
         }
       );
-  
-      console.log("📩 Message Saved:", res.data);
     } catch (error) {
       console.error("❌ Error saving message:", error.response?.data || error);
     }
-  
-    setMessage("");
+
+    setMessage(""); // Clear the input field
   };
-  
-  
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
 
   return (
     <div className="p-4 space-y-2 bg-gray-100 h-screen flex flex-col">
       <h2 className="text-lg font-semibold">Chat with {friendName}</h2>
-
-      {/* Messages List */}
-      <div className="flex-grow overflow-auto space-y-2">
-        {messages.map((msg, index) => (
+      <div
+        ref={chatContainerRef}
+        className="flex-grow overflow-auto space-y-2"
+      >
+        {messages.map((msg, index) => ( // Render messages in the order they are received
           <MessageBubble
             key={index}
-            message={msg.message} // ✅ Fix: Ensure "message" is used correctly
+            message={msg.content}
             isSent={msg.sender === userId}
           />
         ))}
       </div>
-
-      {/* Input Box & Send Button */}
       <div className="flex items-center p-2 bg-white shadow-md rounded-lg">
         <input
           type="text"

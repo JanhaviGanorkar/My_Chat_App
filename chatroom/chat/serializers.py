@@ -26,3 +26,7 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ["id", "sender", "receiver", "content", "timestamp", "seen"]
+
+    def create(self, validated_data):
+        # Save the message instance
+        return Message.objects.create(**validated_data)

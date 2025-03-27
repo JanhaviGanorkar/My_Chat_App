@@ -17,8 +17,8 @@ const SendSimpleMessage = () => {
 
         try {
             const headers = { Authorization: accessToken ? `Bearer ${accessToken}` : "" };
-            await axios.post("http://127.0.0.1:8000/messages/send_simple/", {
-                receiver_id: receiverId,
+            await axios.post("http://127.0.0.1:8000/api/messages/", {
+                receiver: receiverId,  // Match the backend field name
                 content: message
             }, { headers });
 

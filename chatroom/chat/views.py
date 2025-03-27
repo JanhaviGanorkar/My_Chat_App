@@ -174,4 +174,24 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)  # Auto-set sender
+        # Automatically set the sender to the logged-in user
+        serializer.save(sender=self.request.user)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_messages(request):
+    """Fetch chat history between authenticated user and a friend"""
+    friend_id = request.GET.get("friend_id")
+
+    if not friend_id:
+        return Response({"error": "friend_id is required"}, status=400)
+
+    user = request.user
+
+    messages = Message.objects.filter(
+        (Q(sender=user, receiver_id=friend_id) | Q(sender_id=friend_id, receiver=user))
+    ).order_by("timestamp")  # ✅ Fetch messages in ascending order
+
+    serializer = MessageSerializer(messages, many=True)
+    return Response(serializer.data)
