@@ -66,34 +66,38 @@ const ChatScreen = () => {
 
   const sendMessage = async () => {
     if (!socketRef.current || !message.trim() || !userId || !friendId) return;
-
+  
     const messageData = {
-      type: "chat_message",
-      message: message,  // ✅ Fix: Use "message" instead of "content"
       sender: userId,
-      receiver: friendId,
+      receiver: friendId,  // ✅ Include receiver ID
+      content: message,  // ✅ Fix field name (should match Django model)
     };
-
+  
     // ✅ Send message through WebSocket
     socketRef.current.send(JSON.stringify(messageData));
-
+  
     // ✅ Save message to backend
     try {
       const res = await axios.post(
         "http://127.0.0.1:8000/api/messages/",
         messageData,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-
+  
       console.log("📩 Message Saved:", res.data);
     } catch (error) {
-      console.error("❌ Error saving message:", error);
+      console.error("❌ Error saving message:", error.response?.data || error);
     }
-
+  
     setMessage("");
   };
+  
+  
 
   return (
     <div className="p-4 space-y-2 bg-gray-100 h-screen flex flex-col">
