@@ -4,6 +4,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -38,6 +42,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --transition-duration: 0.3s;
 }
 
 .dark {
@@ -73,6 +78,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  --bg-color: #1a202c;
+  --text-color: #f7fafc;
 }
 
 @theme inline {
@@ -120,5 +127,131 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb;
+    margin: 0;
+    padding: 0;
+    transition: background-color var(--transition-duration), color var(--transition-duration);
+  }
+}
+
+html, body {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+footer {
+  margin-top: auto;
+}
+
+/* Ensure dark mode applies globally */
+body.dark {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.dark .bg-white {
+  background-color: #1a202c; /* Dark mode background */
+}
+
+.dark .text-gray-800 {
+  color: #f7fafc; /* Dark mode text */
+}
+
+.dark .border-gray-200 {
+  border-color: #2d3748; /* Dark mode border */
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-duration);
+}
+
+.bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #bfdbfe, #93c5fd);
+}
+
+.dark .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #2d3748, #4a5568);
+}
+
+.text-blue-600 {
+  color: #2563eb;
+}
+
+.bg-blue-600 {
+  background-color: #2563eb;
+}
+
+.bg-blue-700 {
+  background-color: #1d4ed8;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+
+.bg-gray-200 {
+  background-color: #e5e7eb;
+}
+
+button:hover {
+  transition: all 0.3s ease-in-out;
+  transform: scale(1.05);
+}
+
+header {
+  background-color: #2563eb;
+  color: white;
+  font-family: 'Inter', sans-serif;
+}
+
+header nav a,
+header nav button {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: color 0.3s ease;
+}
+
+header nav a:hover,
+header nav button:hover {
+  color: #d1d5db; /* Light gray */
+}
+
+header .bg-blue-700 {
+  background-color: #1e40af; /* Darker blue */
+}
+
+header .text-5xl {
+  color: #ffffff;
+}
+
+header .text-lg {
+  color: #d1d5db;
+}
+
+header .bg-blue-700 img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  header nav {
+    display: flex !important;
+  }
+  header .bg-blue-700 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 }

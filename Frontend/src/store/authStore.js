@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8000/authentication"; // Django backend URL
+const API_BASE_URL = "http://127.0.0.1:8000/authentication"; // Hardcoded backend URL
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -14,7 +14,6 @@ export const useAuthStore = create((set) => ({
       set({ user: res.data.user, accessToken: res.data.access, refreshToken: res.data.refresh });
       localStorage.setItem("access", res.data.access);
       localStorage.setItem("refresh", res.data.refresh);
-      
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.error || "Login failed" };

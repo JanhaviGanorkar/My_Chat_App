@@ -1,39 +1,58 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Register from "../src/auth/Register";
 import Login from "../src/auth/Login";
 import Home from "./pages/Home";
-import { useAuthStore } from "./store/authStore"; // Zustand Store
-import Logout from "../src/auth/Logout"
-import ChatScreen  from "./pages/Msg";
+import { useAuthStore } from "./store/authStore";
+import Logout from "../src/auth/Logout";
+import ChatScreen from "./pages/Msg";
 import UserProfile from "./pages/UserProfile";
 import FriendList from "./Friends/Friends";
 import FriendRequest from "./Friends/FriendRequest";
-import EditProfile from "../src/Form/EditProfile"
-import SendSimpleMessage from "./pages/SendSimpleMessage";
-// import Chat from "./Friends/Chat";
+import EditProfile from "../src/Form/EditProfile";
+import Navbar from "../src/Navbar/Navbar";
+import Footer from "./components/Footer";
+import ProfileCard from "./pages/ProfileCard";
+import PrivacyPolicy from "../src/pages/PrivacyPolicy";
+import About from "../src/pages/About";
+import Contact from "../src/pages/Contact";
 
 function PrivateRoute({ element }) {
-  const accessToken = useAuthStore((state) => state.accessToken); // Check if user is logged in
-
+  const accessToken = useAuthStore((state) => state.accessToken);
   return accessToken ? element : <Navigate to="/login" replace />;
+}
+
+function Layout() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  return (
+    <>
+      <Navbar isAuthenticated={!!accessToken} />
+      <div className="p-4">
+        <Outlet />
+      </div>
+      <Footer />
+    </>
+  );
 }
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<PrivateRoute element={<Home />} />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="/chatscreen" element={<PrivateRoute element={<ChatScreen />} />} />
+          <Route path="/userprofile" element={<PrivateRoute element={<UserProfile />} />} />
+          <Route path="/friend" element={<PrivateRoute element={<FriendList />} />} />
+          <Route path="/editprofile" element={<PrivateRoute element={<EditProfile />} />} />
+          <Route path="/friendreq" element={<PrivateRoute element={<FriendRequest />} />} />
+          <Route path="/friendprofile/:friendId" element={<PrivateRoute element={<ProfileCard />} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+        </Route>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
-        <Route path="/chatscreen" element={<ChatScreen />} />
-        <Route path="/userprofile" element={<UserProfile />} />
-        <Route path="/friend" element={<FriendList />} />
-        <Route path="/editprofile" element={<EditProfile/>} />
-        <Route path="/friendreq" element={<FriendRequest />} />
-        {/* <Route path="/send-simple-message" element={<SendSimpleMessage />} /> */}
-        {/* <Route path="/Chat" element={<Chat roomName="general"/>} /> */}
-        
       </Routes>
     </Router>
   );

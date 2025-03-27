@@ -4,10 +4,12 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom"; // Import useParams
 import { useAuthStore } from "../store/authStore";
+import Spinner from "../components/Spinner";
 
-const ProfileCard = ({ friendId }) => {
+const ProfileCard = () => {
+    const { friendId } = useParams(); // Get friendId from URL
     const [friendData, setFriendData] = useState(null);
     const { accessToken } = useAuthStore();
     const navigate = useNavigate();
@@ -43,7 +45,7 @@ const ProfileCard = ({ friendId }) => {
         }
     };
 
-    if (!friendData) return <p className="text-center mt-4">Loading...</p>;
+    if (!friendData) return <Spinner />; // Show spinner while loading
 
     const { user_profile } = friendData;
 
