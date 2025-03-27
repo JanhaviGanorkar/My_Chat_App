@@ -29,14 +29,14 @@ const ProfileCard = ({ friendId }) => {
                 console.error("Error fetching friend data:", error);
             }
         };
-
+    
         if (friendId) fetchFriendData();
-    }, [friendId, headers]);
+    }, [friendId, accessToken]);
 
     const handleAddFriend = async () => {
         try {
             await axios.post(`http://127.0.0.1:8000/friends/send/${friendId}/`, {}, { headers });
-            alert("Friend Request Send successfully");
+            alert("Friend Request Sent successfully");
         } catch (error) {
             console.error("Error sending friend request:", error);
             alert("Failed to send friend request");
@@ -63,8 +63,9 @@ const ProfileCard = ({ friendId }) => {
                     <h2 className="mt-4 text-2xl font-bold">{user_profile.name}</h2>
                     <p className="text-gray-500">{user_profile.email}</p>
                     <div className="mt-6 flex gap-4">
+                        {/* Pass friendName to ChatScreen */}
                         <Button 
-                            onClick={() => navigate(`/chat/${friendId}`)}
+                            onClick={() => navigate(`/chatscreen`, { state: { friendName: user_profile.name, friendId: user_profile.id } })}
                             className="bg-blue-500 text-white hover:bg-blue-600"
                         >
                             Message

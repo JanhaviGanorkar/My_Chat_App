@@ -1,38 +1,48 @@
-import json
-import re
 from channels.generic.websocket import AsyncWebsocketConsumer
+import json
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        
-        # 🛠️ Sanitize room_name: Remove invalid characters
-        self.room_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', self.room_name)
-        
-        self.room_group_name = f'chat_{self.room_name}'
+   async def connect(self):
+    print("Scope URL Route:", self.scope.get("url_route", {}))  # Debugging
+    self.user = self.scope.get("user", None)
 
-        # ✅ Add group safely
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-        await self.accept()
+    if not self.user or self.user.is_anonymous:
+        await self.close()
+        return
+
+    try:
+        self.friend_id = int(self.scope["url_route"]["kwargs"]["friend_id"])
+    except KeyError:
+        print("❌ friend_id not found in scope['url_route']['kwargs']")
+        await self.close()
+        return
+
+    self.room_group_name = f"chat_{min(self.user.id, self.friend_id)}_{max(self.user.id, self.friend_id)}"
+
+    await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+    await self.accept()
+
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        if hasattr(self, "room_group_name"):
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data['message']
+        message = data["content"]
+        sender = self.user.id
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                'type': 'chat_message',
-                'message': message
+                "type": "chat_message",
+                "sender": sender,
+                "message": message,
             }
         )
 
     async def chat_message(self, event):
-        message = event['message']
-
         await self.send(text_data=json.dumps({
-            'message': message
+            "sender": event["sender"],
+            "message": event["message"],
         }))

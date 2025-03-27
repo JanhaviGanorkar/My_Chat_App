@@ -9,7 +9,8 @@ import UserProfile from "./pages/UserProfile";
 import FriendList from "./Friends/Friends";
 import FriendRequest from "./Friends/FriendRequest";
 import EditProfile from "../src/Form/EditProfile"
-import Chat from "./Friends/Chat";
+import SendSimpleMessage from "./pages/SendSimpleMessage";
+// import Chat from "./Friends/Chat";
 
 function PrivateRoute({ element }) {
   const accessToken = useAuthStore((state) => state.accessToken); // Check if user is logged in
@@ -30,7 +31,8 @@ function App() {
         <Route path="/friend" element={<FriendList />} />
         <Route path="/editprofile" element={<EditProfile/>} />
         <Route path="/friendreq" element={<FriendRequest />} />
-        <Route path="/Chat" element={<Chat roomName="general"/>} />
+        {/* <Route path="/send-simple-message" element={<SendSimpleMessage />} /> */}
+        {/* <Route path="/Chat" element={<Chat roomName="general"/>} /> */}
         
       </Routes>
     </Router>

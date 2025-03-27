@@ -1,8 +1,10 @@
 from django.db import models
-from django.conf import settings  # ✅ Correct way to reference Custom User Model
+from django.contrib.auth import get_user_model   # ✅ Correct way to reference Custom User Model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings  # ✅ Import settings
 
+User = get_user_model() 
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -42,3 +44,15 @@ class Friendship(models.Model):
 
     def __str__(self):
         return f"{self.user} is friends with {self.friend}"
+    
+
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    seen = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"From {self.sender} to {self.receiver}: {self.content[:20]}"

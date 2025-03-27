@@ -6,13 +6,19 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.decorators import login_required
 from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework import serializers, viewsets 
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import render
 from .serializers import ProfileSerializer
+from .serializers import MessageSerializer
 from rest_framework import status  
 from django.db.models import Q  # Add this import
+from django.apps import apps  
+from chat.models import FriendRequest, Friendship, Profile
+from chat.serializers import ProfileSerializer, MessageSerializer
+from .models import Message
 
 User = get_user_model()
 
@@ -159,3 +165,13 @@ def search_users(request):
         ).exclude(id=request.user.id).values('id', 'name', 'email')
         return JsonResponse({"users": list(users)})
     return JsonResponse({"users": []})
+
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all().order_by("-timestamp")
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)  # Auto-set sender

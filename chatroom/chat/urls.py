@@ -18,8 +18,8 @@ urlpatterns = [
     path("friends/requests/", views.list_friend_requests, name="list-friend-requests"),
     path("friends/list/", views.list_friends, name="list-friends"),
     path("friends/search/", views.search_users, name="search-users"),
-   
 ]
+
 
 
 '''

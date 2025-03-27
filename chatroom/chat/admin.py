@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FriendRequest, Friendship, Profile
+from .models import FriendRequest, Friendship, Profile, Message
 
 
 @admin.register(Profile)
@@ -17,3 +17,10 @@ class FriendRequestAdmin(admin.ModelAdmin):
 class FriendshipAdmin(admin.ModelAdmin):
     list_display = ("user", "friend")
     search_fields = ("user__username", "friend__username")
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ("sender", "receiver", "content", "timestamp", "seen")
+    search_fields = ("sender__username", "receiver__username", "content")
+    list_filter = ("seen", "timestamp")

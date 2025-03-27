@@ -13,11 +13,11 @@ const UserProfile = () => {
   const [userId, setUserId] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-//   useEffect(() => {
-//     if (!accessToken) {
-//         navigate("/login");
-//     }
-// }, [accessToken, navigate]);
+  useEffect(() => {
+    if (!token) {
+        navigate("/login");
+    }
+}, [token, navigate]);
   // Fetch user ID when the component mounts
   useEffect(() => {
     const fetchUserId = async () => {
@@ -36,10 +36,7 @@ const UserProfile = () => {
 
   // Fetch user profile when userId is available
   useEffect(() => {
-    if (!userId) {
-      navigate("/login");
-    }
-
+    if (!userId) return
     const fetchUserProfile = async () => {
       try {
         const response = await axios.get(`http://127.0.0.1:8000/user-profile/${userId}/`, {

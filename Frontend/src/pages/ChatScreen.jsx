@@ -6,18 +6,19 @@ import { useFriendsStore } from "../store/FriendStore";
 
 const ChatScreen = () => {
   const location = useLocation();
-  const friendName = location.state?.friendName || "Unknown";
-  const friendId = location.state?.friendId;
-
+  const friendName = location.state?.friendName || "Unknown"; // Get friendName from ProfileCard
+  const friendId = location.state?.friendId || 3;
   const [messages, setMessages] = useState([]);
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState(null); // Single value instead of array
   const [message, setMessage] = useState("");
   const socketRef = useRef(null);
-  const token = localStorage.getItem("access");
+  const { friends, loadFriends } = useFriendsStore();
+
+  const token = localStorage.getItem("access"); // Fetch access token
 
   useEffect(() => {
-    if (!token || !friendId) {
-      console.error("No access token or friend ID found!");
+    if (!token) {
+      console.error("No access token found!");
       return;
     }
 
@@ -35,8 +36,10 @@ const ChatScreen = () => {
 
     fetchUserId();
 
-    // ✅ Create WebSocket Instance
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat/${friendId}/?token=${token}`);
+    // WebSocket Setup
+    const ws = new WebSocket(
+      `ws://localhost:8000/ws/chat/${encodeURIComponent(friendName)}/?token=${token}`
+    );
     socketRef.current = ws;
 
     ws.onopen = () => console.log("✅ WebSocket connected");
@@ -44,7 +47,6 @@ const ChatScreen = () => {
     ws.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        console.log("📩 New Message:", data);
         setMessages((prevMessages) => [...prevMessages, data]);
       } catch (error) {
         console.error("⚠️ Error parsing WebSocket message:", error);
@@ -59,39 +61,46 @@ const ChatScreen = () => {
         ws.close();
       }
     };
-  }, [friendId, token]);
+  }, [friendName, token]); // Connect WebSocket with friend's name
 
   const sendMessage = async () => {
-    if (socketRef.current && message.trim() && userId && friendId) {
-      const messageData = {
-        type: "chat_message",
-        content: message,
-        sender: userId,
-        receiver: friendId,
-      };
-
-      socketRef.current.send(JSON.stringify(messageData));
-
-      try {
-        const res = await fetch("http://127.0.0.1:8000/api/messages/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(messageData),
-        });
-
-        if (!res.ok) {
-          console.error("Failed to save message");
-        }
-      } catch (error) {
-        console.error("Error saving message:", error);
-      }
-
-      setMessage("");
+    if (!userId || !friendId) {
+      console.error("❌ User ID or Friend ID is missing!", { userId, friendId });
+      return;
     }
+  
+    const messageData = {
+      type: "chat_message",
+      message,
+      sender: parseInt(userId), // Ensure integer
+      receiver: parseInt(friendId),
+    };
+  
+    console.log("📤 Sending message data:", messageData); // ✅ Debugging
+  
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/messages/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(messageData),
+      });
+  
+      const data = await res.json();
+      console.log("📩 Response from backend:", data); // ✅ Debugging
+  
+      if (!res.ok) {
+        console.error("❌ Failed to save message", data);
+      }
+    } catch (error) {
+      console.error("❌ Error saving message:", error);
+    }
+  
+    setMessage("");
   };
+  
 
   return (
     <div className="p-4 space-y-2 bg-gray-100 h-screen flex flex-col">
@@ -102,8 +111,8 @@ const ChatScreen = () => {
         {messages.map((msg, index) => (
           <MessageBubble
             key={index}
-            message={msg.content} // Fix: Use correct message key
-            isSent={msg.sender === userId}
+            message={msg.message}
+            isSent={msg.sender === userId} // Fixed condition
           />
         ))}
       </div>
