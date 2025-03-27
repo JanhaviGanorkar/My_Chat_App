@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import MessageBubble from "../components/ui/MessageBubble";
-import { useFriendsStore } from "../store/FriendStore";
 
 const ChatScreen = () => {
   const location = useLocation();
@@ -35,7 +34,7 @@ const ChatScreen = () => {
 
     fetchUserId();
 
-    // ✅ Create WebSocket Instance
+    // ✅ WebSocket Connection
     const ws = new WebSocket(`ws://localhost:8000/ws/chat/${friendId}/?token=${token}`);
     socketRef.current = ws;
 
@@ -44,14 +43,18 @@ const ChatScreen = () => {
     ws.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        console.log("📩 New Message:", data);
-        setMessages((prevMessages) => [...prevMessages, data]);
+        console.log("📩 New Message Received:", data);
+
+        // ✅ Fix: Ensure correct message format
+        if (data.sender && data.message) {
+          setMessages((prevMessages) => [...prevMessages, data]);
+        }
       } catch (error) {
         console.error("⚠️ Error parsing WebSocket message:", error);
       }
     };
 
-    ws.onclose = (event) => console.warn("❌ WebSocket closed", event.reason);
+    ws.onclose = (event) => console.warn("❌ WebSocket closed:", event.reason);
     ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
 
     return () => {
@@ -62,35 +65,34 @@ const ChatScreen = () => {
   }, [friendId, token]);
 
   const sendMessage = async () => {
-    if (socketRef.current && message.trim() && userId && friendId) {
-      const messageData = {
-        type: "chat_message",
-        content: message,
-        sender: userId,
-        receiver: friendId,
-      };
+    if (!socketRef.current || !message.trim() || !userId || !friendId) return;
 
-      socketRef.current.send(JSON.stringify(messageData));
+    const messageData = {
+      type: "chat_message",
+      message: message,  // ✅ Fix: Use "message" instead of "content"
+      sender: userId,
+      receiver: friendId,
+    };
 
-      try {
-        const res = await fetch("http://127.0.0.1:8000/api/messages/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(messageData),
-        });
+    // ✅ Send message through WebSocket
+    socketRef.current.send(JSON.stringify(messageData));
 
-        if (!res.ok) {
-          console.error("Failed to save message");
+    // ✅ Save message to backend
+    try {
+      const res = await axios.post(
+        "http://127.0.0.1:8000/api/messages/",
+        messageData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-      } catch (error) {
-        console.error("Error saving message:", error);
-      }
+      );
 
-      setMessage("");
+      console.log("📩 Message Saved:", res.data);
+    } catch (error) {
+      console.error("❌ Error saving message:", error);
     }
+
+    setMessage("");
   };
 
   return (
@@ -102,7 +104,7 @@ const ChatScreen = () => {
         {messages.map((msg, index) => (
           <MessageBubble
             key={index}
-            message={msg.content} // Fix: Use correct message key
+            message={msg.message} // ✅ Fix: Ensure "message" is used correctly
             isSent={msg.sender === userId}
           />
         ))}
