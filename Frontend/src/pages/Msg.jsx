@@ -1,33 +1,38 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import axios from "axios";
 import MessageBubble from "../components/ui/MessageBubble";
 import Spinner from "../components/Spinner";
-import { Moon, Sun } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
-const ChatScreen = () => {
+const Msg = () => {
+  const [messages, setMessages] = useState([]);
   const location = useLocation();
   const friendName = location.state?.friendName || "Unknown";
   const friendId = location.state?.friendId;
-
-  const [messages, setMessages] = useState([]);
-  const [userId, setUserId] = useState(null);
   const [message, setMessage] = useState("");
-  const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
+  const [userId, setUserId] = useState(null);
   const socketRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const [wsConnected, setWsConnected] = useState(false);
+  const maxReconnectAttempts = 5;
   const token = localStorage.getItem("access");
+  const processedMessageIds = useRef(new Set());
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-  }, [darkMode]);
-
-  useEffect(() => {
-    if (!token || !friendId) {
-      console.error("No access token or friend ID found!");
-      return;
+  const addMessage = (newMessage) => {
+    if (!newMessage.id) {
+      newMessage.id = `temp-${Date.now()}-${Math.random()}`;
     }
 
+    if (!processedMessageIds.current.has(newMessage.id)) {
+      processedMessageIds.current.add(newMessage.id);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      setTimeout(scrollToBottom, 100);
+    }
+  };
+
+  useEffect(() => {
     const fetchUserId = async () => {
       try {
         const response = await axios.get("http://127.0.0.1:8000/me/", {
@@ -40,42 +45,112 @@ const ChatScreen = () => {
     };
 
     fetchUserId();
-    fetchMessages();
+  }, [token]);
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${friendId}/?token=${token}`);
-    socketRef.current = ws;
+  useEffect(() => {
+    if (!friendId) {
+      setError("Friend ID is required");
+      console.error("❌ Friend ID is missing");
+      return;
+    }
+    setError(null);
+  }, [friendId]);
 
-    ws.onopen = () => console.log("✅ WebSocket connected");
+  useEffect(() => {
+    setMessages([]);
+    processedMessageIds.current.clear();
+    setWsConnected(false);
 
-    ws.onmessage = (e) => {
+    if (!friendId || !token) {
+      console.warn("⚠️ Missing required params:", { friendId, hasToken: !!token });
+      return;
+    }
+
+    let ws = null;
+    let reconnectTimeout = null;
+
+    const connectWebSocket = () => {
       try {
-        const data = JSON.parse(e.data);
-        console.log("📩 New Message Received:", data);
-        if (data.sender && data.content) {
-          setMessages((prevMessages) => [...prevMessages, data]);
-          setTimeout(scrollToBottom, 100);
-        }
+        const encodedToken = encodeURIComponent(token);
+        const wsUrl = `ws://127.0.0.1:8000/ws/chat/${friendId}/?token=${encodedToken}`;
+
+        ws = new WebSocket(wsUrl);
+        socketRef.current = ws;
+
+        ws.onopen = () => {
+          console.log("✅ WebSocket connected");
+          setWsConnected(true);
+          reconnectAttempts.current = 0;
+          setError(null);
+        };
+
+        ws.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.sender && data.content) {
+              addMessage(data);
+            }
+          } catch (error) {
+            console.error("⚠️ Error parsing message:", error);
+          }
+        };
+
+        ws.onclose = (event) => {
+          console.warn("❌ WebSocket closed:", event.code, event.reason);
+          setWsConnected(false);
+
+          if (reconnectAttempts.current < maxReconnectAttempts) {
+            const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
+            console.log(`🔄 Reconnecting in ${timeout / 1000}s...`);
+
+            reconnectTimeout = setTimeout(() => {
+              reconnectAttempts.current += 1;
+              connectWebSocket();
+            }, timeout);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("⚠️ WebSocket error:", error);
+          setError("Failed to connect to chat server");
+        };
       } catch (error) {
-        console.error("⚠️ Error parsing WebSocket message:", error);
+        console.error("❌ Failed to establish WebSocket connection:", error);
+        setError("Failed to establish chat connection");
       }
     };
 
-    ws.onclose = (event) => console.warn("❌ WebSocket closed:", event.reason);
-    ws.onerror = (e) => console.error("⚠️ WebSocket error:", e);
+    connectWebSocket();
+    fetchMessages();
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (socketRef.current) {
+        socketRef.current.close(1000, "Component unmounting");
+        socketRef.current = null;
       }
     };
   }, [friendId, token]);
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/messages/?friend_id=${friendId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/messages/?friend_id=${friendId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      processedMessageIds.current.clear();
+      const initialMessages = response.data.reverse();
+
+      initialMessages.forEach((msg) => {
+        processedMessageIds.current.add(msg.id);
       });
-      setMessages(response.data.reverse());
+
+      setMessages(initialMessages);
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error("❌ Failed to fetch messages:", error);
@@ -83,24 +158,26 @@ const ChatScreen = () => {
   };
 
   const sendMessage = async () => {
-    if (!socketRef.current || !message.trim() || !userId || !friendId) return;
-
-    const messageData = { sender: userId, receiver: friendId, content: message };
-
-    setMessages((prevMessages) => [...prevMessages, { sender: userId, content: message }]);
-    setTimeout(scrollToBottom, 100);
-
-    socketRef.current.send(JSON.stringify(messageData));
-
-    try {
-      await axios.post("http://127.0.0.1:8000/api/messages/", messageData, {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
-    } catch (error) {
-      console.error("❌ Error saving message:", error.response?.data || error);
+    if (!socketRef.current?.readyState === WebSocket.OPEN || !wsConnected) {
+      setError("Chat connection lost. Reconnecting...");
+      return;
     }
 
-    setMessage("");
+    if (!message.trim() || !friendId) return;
+
+    const messageData = {
+      content: message.trim(),
+      receiver: friendId,
+    };
+
+    try {
+      // Only send through WebSocket, don't add to state here
+      socketRef.current.send(JSON.stringify(messageData));
+      setMessage(""); // Clear input field
+    } catch (error) {
+      console.error("❌ Error sending message:", error);
+      setError("Failed to send message");
+    }
   };
 
   const scrollToBottom = () => {
@@ -109,26 +186,26 @@ const ChatScreen = () => {
     }
   };
 
-  const toggleTheme = () => {
-    const newTheme = darkMode ? "light" : "dark";
-    localStorage.setItem("theme", newTheme);
-    setDarkMode(!darkMode);
-  };
-
   return (
-    <div className={`p-4 space-y-2 h-screen flex flex-col ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-black"}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 bg-blue-600 dark:bg-blue-900 text-white rounded-lg shadow-md">
+    <div className="p-4 space-y-2 h-screen mt-16 flex flex-col bg-gray-100 text-black">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg mb-2">
+          {error}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between p-3 bg-blue-600 text-white rounded-lg shadow-md">
         <h2 className="text-lg font-semibold">Chat with {friendName}</h2>
-        {/* <button onClick={toggleTheme} className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
-          {darkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-800" />}
-        </button> */}
       </div>
 
-      {/* Chat Messages */}
-      <div ref={chatContainerRef} className="flex-grow overflow-auto space-y-2 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <div ref={chatContainerRef} className="flex-grow overflow-auto space-y-2 p-2 bg-white rounded-lg shadow-md">
         {messages.length === 0 ? (
-          <Spinner />
+          <div className="flex justify-center items-center h-full">
+            <svg className="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h6m-6 4h10M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p className="text-gray-500 text-sm ml-2">No messages yet</p>
+          </div>
         ) : (
           messages.map((msg, index) => (
             <MessageBubble key={index} message={msg.content} isSent={msg.sender === userId} />
@@ -136,23 +213,30 @@ const ChatScreen = () => {
         )}
       </div>
 
-      {/* Input Box */}
-      <div className="flex items-center p-2 bg-white dark:bg-gray-800 shadow-md rounded-lg">
+      <div className="flex items-center p-2 bg-white shadow-md rounded-lg">
         <input
           type="text"
-          className="flex-grow p-2 border rounded-lg outline-none bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-          placeholder="Type a message..."
+          disabled={!wsConnected || !friendId}
+          className={`flex-grow p-2 border rounded-lg outline-none bg-white text-black
+            placeholder-gray-400 focus:ring-2 focus:ring-blue-500 
+            ${(!wsConnected || !friendId) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          placeholder={!wsConnected ? "Connecting..." : "Type a message..."}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && wsConnected && friendId && sendMessage()}
         />
 
-        <button onClick={sendMessage} className="ml-2 bg-blue-500 text-white p-2   rounded-lg">
-          Send
+        <button
+          onClick={sendMessage}
+          disabled={!wsConnected || !friendId}
+          className={`ml-2 bg-blue-500 text-white p-2 rounded-lg
+            ${(!wsConnected || !friendId) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+        >
+          {!wsConnected ? 'Connecting...' : 'Send'}
         </button>
       </div>
     </div>
   );
 };
 
-export default ChatScreen;
+export default Msg;
